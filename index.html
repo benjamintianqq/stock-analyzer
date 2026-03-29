@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>股票买卖点分析 — 顶级机构决策框架</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f0f4f8; color: #1a202c; min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, #2b6cb0 0%, #3182ce 100%);
+  border-bottom: 1px solid #bee3f8;
+  padding: 20px 32px;
+  display: flex; align-items: center; gap: 16px;
+}
+.header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+.header .sub { font-size: 12px; color: #bee3f8; margin-top: 3px; }
+.header .badge {
+  background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;
+  padding: 4px 10px; font-size: 11px; color: #fff; margin-left: auto;
+}
+.input-section { max-width: 860px; margin: 28px auto; padding: 0 20px; }
+.input-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.input-card h2 { font-size: 14px; color: #2b6cb0; margin-bottom: 18px; font-weight: 600; }
+.input-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.input-group { display: flex; flex-direction: column; gap: 5px; }
+.input-group label { font-size: 11px; color: #718096; font-weight: 500; }
+.input-group select, .input-group input {
+  background: #f7fafc; border: 1px solid #cbd5e0; border-radius: 8px;
+  color: #1a202c; font-size: 14px; padding: 10px 14px; outline: none;
+  transition: border-color 0.2s;
+}
+.input-group select:focus, .input-group input:focus { border-color: #4299e1; background: #fff; }
+.input-group input { width: 220px; }
+.input-group select { width: 150px; }
+.ticker-hint { font-size: 11px; color: #a0aec0; margin-top: 6px; }
+.btn-analyze {
+  background: linear-gradient(135deg, #2b6cb0, #3182ce);
+  color: #fff; border: none; border-radius: 8px;
+  padding: 10px 32px; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+}
+.btn-analyze:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* status */
+.status-bar { max-width: 860px; margin: 0 auto 14px; padding: 0 20px; display: none; }
+.status-bar.show { display: block; }
+.status-inner {
+  background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 8px;
+  padding: 11px 16px; font-size: 13px; color: #2b6cb0;
+  display: flex; align-items: center; gap: 10px;
+}
+.spinner {
+  width: 15px; height: 15px; border: 2px solid #bee3f8;
+  border-top-color: #3182ce; border-radius: 50%;
+  animation: spin 0.8s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-box {
+  max-width: 860px; margin: 0 auto 14px; padding: 0 20px; display: none;
+}
+.error-box.show { display: block; }
+.error-inner {
+  background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px;
+  padding: 14px 16px; color: #c53030; font-size: 13px;
+}
+
+/* report */
+.report-section { max-width: 860px; margin: 0 auto 40px; padding: 0 20px; display: none; }
+.report-section.show { display: block; }
+.report-header {
+  background: linear-gradient(135deg, #2b6cb0, #2c5282);
+  border: 1px solid #bee3f8; border-radius: 12px;
+  padding: 20px 24px; margin-bottom: 16px;
+}
+.report-header .ticker-line {
+  font-size: 22px; font-weight: 700; color: #fff;
+  display: flex; align-items: center; gap: 12px;
+}
+.report-header .meta { font-size: 11px; color: #bee3f8; margin-top: 6px; }
+.market-badge {
+  font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600;
+}
+.market-US { background: #c6f6d5; color: #276749; }
+.market-CN { background: #fed7d7; color: #9b2c2c; }
+.market-HK { background: #bee3f8; color: #2c5282; }
+.source-tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.source-tag {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  background: rgba(255,255,255,0.15); color: #bee3f8; border: 1px solid rgba(255,255,255,0.25);
+}
+.source-tag.ok { background: rgba(154,230,180,0.25); color: #c6f6d5; border-color: rgba(154,230,180,0.4); }
+.source-tag.warn { background: rgba(251,211,141,0.25); color: #fbd38d; border-color: rgba(251,211,141,0.4); }
+
+/* verdict */
+.verdict-card {
+  background: #fff; border-radius: 12px;
+  padding: 18px 22px; margin-bottom: 16px;
+  border-left: 4px solid #48bb78;
+  display: flex; align-items: center; gap: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;
+  border-left-width: 4px;
+}
+.verdict-card.sell { border-left-color: #fc8181; }
+.verdict-card.hold { border-left-color: #ecc94b; }
+.verdict-emoji { font-size: 34px; }
+.verdict-text h3 { font-size: 18px; font-weight: 700; color: #1a202c; }
+.verdict-text p { font-size: 13px; color: #4a5568; margin-top: 5px; line-height: 1.6; }
+.verdict-score {
+  margin-left: auto; text-align: center; background: #f7fafc;
+  border-radius: 10px; padding: 10px 16px; min-width: 72px;
+  border: 1px solid #e2e8f0;
+}
+.verdict-score .num { font-size: 26px; font-weight: 800; }
+.verdict-score .label { font-size: 11px; color: #718096; margin-top: 2px; }
+
+/* cards */
+.card {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 18px 22px; margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.card h3 {
+  font-size: 14px; font-weight: 700; color: #2b6cb0;
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.section-title {
+  font-size: 11px; color: #a0aec0; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; margin: 12px 0 8px;
+}
+.metric-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid #f0f4f8;
+  font-size: 13px; line-height: 1.5;
+}
+.metric-row:last-child { border-bottom: none; }
+.ml { color: #718096; min-width: 150px; flex-shrink: 0; }
+.mv { color: #1a202c; flex: 1; }
+.ms { margin-left: auto; font-size: 13px; white-space: nowrap; }
+.g { color: #276749; } .r { color: #c53030; } .y { color: #b7791f; } .gr { color: #718096; }
+
+/* checklist */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width:640px){.two-col{grid-template-columns:1fr;}}
+.checklist { display: flex; flex-direction: column; gap: 5px; }
+.ci {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 10px; border-radius: 6px;
+  font-size: 12px; line-height: 1.5; background: #f7fafc;
+}
+.ci.pass { border-left: 3px solid #48bb78; }
+.ci.fail { border-left: 3px solid #fc8181; }
+.ci.manual { border-left: 3px solid #cbd5e0; }
+.ci .cm { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.ci .ct { color: #2d3748; }
+.ci .cn { color: #a0aec0; font-size: 11px; }
+
+/* market hint */
+.mhint {
+  background: #f7fafc; border-radius: 8px; padding: 12px 14px; margin-top: 10px;
+  border: 1px solid #e2e8f0;
+}
+.mhint h4 { font-size: 11px; color: #4a5568; margin-bottom: 6px; font-weight: 600; }
+.mhint li { font-size: 12px; color: #718096; padding: 2px 0; list-style: none; }
+.mhint li::before { content: "⚠️ "; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📊 股票买卖点分析</h1>
+    <div class="sub">基于《二级市场买卖点判断：顶级机构的系统性决策框架》</div>
+  </div>
+  <div class="badge">数据来源：腾讯财经 · 东方财富</div>
+</div>
+
+<div class="input-section">
+  <div class="input-card">
+    <h2>输入股票代码</h2>
+    <div class="input-row">
+      <div class="input-group">
+        <label>市场</label>
+        <select id="market" onchange="updateHint()">
+          <option value="CN">🇨🇳 A股</option>
+          <option value="HK">🇭🇰 港股</option>
+          <option value="US">🇺🇸 美股</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>股票代码</label>
+        <input id="ticker" type="text" placeholder="如：600519" />
+        <div class="ticker-hint" id="tickerHint">沪市如 600519，深市如 000858</div>
+      </div>
+      <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()">开始分析</button>
+    </div>
+
+    <!-- 风控参数 -->
+    <div style="margin-top:20px;padding-top:18px;border-top:1px solid #e2e8f0;">
+      <div style="font-size:11px;color:#718096;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px;">🛡️ 仓位风控参数</div>
+      <div class="input-row" style="flex-wrap:wrap;gap:20px;align-items:flex-start;">
+        <div class="input-group">
+          <label>总资金（元）</label>
+          <input id="totalCapital" type="number" min="1000" step="10000" value="1000000" style="width:160px;" />
+          <div class="ticker-hint">用于计算建议仓位金额</div>
+        </div>
+        <div class="input-group">
+          <label>单笔最大亏损（%总资金）</label>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input id="maxLossPct" type="number" min="0.5" max="50" step="0.5" value="15" style="width:90px;" />
+            <span style="font-size:13px;color:#4a5568;">%</span>
+          </div>
+          <div class="ticker-hint">如亏到止损位，最多亏这么多</div>
+        </div>
+        <div class="input-group">
+          <label>目标收益率（%）</label>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input id="targetReturnPct" type="number" min="1" max="200" step="1" value="20" style="width:90px;" />
+            <span style="font-size:13px;color:#4a5568;">%</span>
+          </div>
+          <div class="ticker-hint">预期上涨空间</div>
+        </div>
+        <div class="input-group">
+          <label>止损方式</label>
+          <select id="stopMode" style="width:160px;">
+            <option value="atr2">2倍ATR止损（波段）</option>
+            <option value="atr3">3倍ATR止损（趋势）</option>
+            <option value="sma200">跌破200日均线5%</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>止损执行策略</label>
+          <select id="stopStrategy" style="width:180px;">
+            <option value="hard">硬止损（立刻全部了结）</option>
+            <option value="half">半仓减持（减50%观察）</option>
+            <option value="close">收盘确认（收盘价破线才执行）</option>
+            <option value="trailing">追踪止损（盈利后上移止损线）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar" id="statusBar">
+  <div class="status-inner">
+    <div class="spinner"></div>
+    <span id="statusText">正在分析...</span>
+  </div>
+</div>
+<div class="error-box" id="errorBox"><div class="error-inner" id="errorText"></div></div>
+<div class="report-section" id="reportSection"></div>
+
+<script>
+// ── 工具 ──────────────────────────────────────
+const fmt = (v,d=2) => (v==null||isNaN(v)) ? null : Number(v).toFixed(d);
+const fmtN = (v,d=2) => fmt(v,d) ?? 'N/A';
+const fmtP = (v,d=1) => (v==null||isNaN(v)) ? 'N/A' : Number(v).toFixed(d)+'%';
+const na = v => v==null || v===undefined || (typeof v==='number' && isNaN(v));
+
+function setStatus(t) { document.getElementById('statusText').textContent = t; }
+function showErr(m) {
+  document.getElementById('errorText').textContent = '❌ '+m;
+  document.getElementById('errorBox').classList.add('show');
+}
+
+function updateHint() {
+  const m = document.getElementById('market').value;
+  const hints = {
+    CN: '沪市如 600519，深市如 000858',
+    HK: '港股代码如 0700（腾讯）、9988（阿里）',
+    US: '美股代码如 AAPL、TSLA、NVDA',
+  };
+  document.getElementById('tickerHint').textContent = hints[m];
+}
+
+// ── CORS 代理 ────────────────────────────────
+// 本地代理优先（内网 10.40.81.35:8766），外网代理备用
+// 代理地址自适应：同域 /proxy 端点（server.js 提供），外网备用兜底
+const LOCAL_PROXY = `${location.protocol}//${location.hostname}${location.port && location.port !== '80' && location.port !== '443' ? ':'+location.port : ''}/proxy`;
+const PROXIES = [
+  u => `${LOCAL_PROXY}?url=${encodeURIComponent(u)}`,           // 同域代理（最快最稳，GBK自动解码）
+  u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,  // 外网备用1
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,        // 外网备用2
+];
+async function proxyFetch(url, timeout=12000) {
+  // 返回 contents 原始字符串，由调用方自行解析
+  for (const pFn of PROXIES) {
+    try {
+      const res = await Promise.race([
+        fetch(pFn(url)),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),timeout))
+      ]);
+      if (!res.ok) { console.warn('proxy HTTP', res.status); continue; }
+      const text = await res.text();
+      // 本地代理和 allorigins 都返回 {contents: "..."} 格式
+      try {
+        const w = JSON.parse(text);
+        if (w.contents !== undefined) return w.contents; // 返回原始字符串
+        return text; // 直接是内容（corsproxy.io 直接返回原文）
+      } catch {
+        return text;
+      }
+    } catch(e) { console.warn('proxy fail:', e.message); }
+  }
+  throw new Error('数据获取失败（所有代理均不可用）');
+}
+
+// 解析 proxyFetch 返回的字符串为 JSON 对象
+function parseProxyJson(raw) {
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+// ── 腾讯财经实时报价 ─────────────────────────
+// 返回：price/pe/pb/high52/low52/turnoverRate/name
+// 注：A股股息率改用同花顺税前分红率，此处不再处理
+function parseTencentQt(rawText, isAStock) {
+  const m = rawText.match(/="([^"]+)"/);
+  if (!m) return null;
+  const p = m[1].split('~');
+  const n = i => { const v=parseFloat(p[i]); return isNaN(v)?null:v; };
+  const s = i => (p[i]||'').trim();
+  const price = n(3);
+  // 美股p[52]是股息率(%)；A股通过同花顺单独获取
+  const dividendYield = isAStock ? null : n(52);
+  return {
+    name:         s(1),
+    price,
+    pe:           n(39),
+    pb:           n(43),
+    // A股：高[47]低[48]；美股/港股：高[48]低[49]
+    high52:       isAStock ? n(47) : n(48),
+    low52:        isAStock ? n(48) : n(49),
+    turnoverRate: n(38),   // 换手率%（A股有效）
+    dividendYield,         // 仅美股/港股有效
+    mktCap:       n(44),   // 亿
+    beta:         null,
+  };
+}
+
+async function fetchTencentQuote(tqCode, isAStock) {
+  setStatus(`获取实时报价（腾讯财经）...`);
+  const raw = await proxyFetch(`https://qt.gtimg.cn/q=${tqCode}`);
+  // raw 是原始字符串，如 v_sh600519="1~贵州茅台~..."
+  return parseTencentQt(typeof raw === 'string' ? raw : JSON.stringify(raw), isAStock);
+}
+
+// ── 腾讯财经历史K线 ──────────────────────────
+// param 格式：sh600519 / hk00700 / usAAPL
+async function fetchTencentKline(param, count=500) {
+  setStatus(`获取历史K线（腾讯财经）...`);
+  const url = `https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=d&param=${param},day,,,${count},qfq`;
+  const raw = await proxyFetch(url);
+  // raw 是字符串，格式为 d={...} 或直接 JSON
+  let parsed;
+  const m = (typeof raw === 'string' ? raw : '').match(/=(\{.+)/s);
+  if (m) {
+    try { parsed = JSON.parse(m[1]); } catch(e) { throw new Error('K线JSON解析失败: '+e.message); }
+  } else {
+    parsed = parseProxyJson(raw);
+  }
+  const inner = parsed?.data?.[param];
+  if (!inner) throw new Error('K线数据为空');
+  const days = inner.qfqday || inner.day || [];
+  // 格式：[日期, 开盘, 收盘, 最高, 最低, 成交量, {}, 换手率, 成交额]
+  const closes=[], highs=[], lows=[], opens=[], vols=[], dates=[];
+  for (const d of days) {
+    if (!d || d.length < 5) continue;
+    dates.push(d[0]);
+    opens.push(parseFloat(d[1]));
+    closes.push(parseFloat(d[2]));
+    highs.push(parseFloat(d[3]));
+    lows.push(parseFloat(d[4]));
+    vols.push(parseInt(d[5])||0);
+  }
+  return { dates, closes, highs, lows, opens, volumes: vols };
+}
+
+// ── 同花顺股息率（A股）─────────────────────
+// 从 bonus.html 表格的"税前分红率"列取最新有效值
+async function fetchThsiDividendYield(code) {
+  setStatus(`获取股息率（同花顺）...`);
+  const url = `https://basic.10jqka.com.cn/${code}/bonus.html`;
+  const raw = await proxyFetch(url);
+  // raw 是已经 GBK→UTF-8 解码的 HTML
+  const html = typeof raw === 'string' ? raw : '';
+
+  // 找 bonus_table 表格
+  const tableMatch = html.match(/id="bonus_table"([\s\S]+?)<\/table>/);
+  if (!tableMatch) return null;
+  const tableHtml = tableMatch[1];
+
+  // 逐行解析 <tr>
+  const rows = tableHtml.match(/<tr[^>]*>([\s\S]+?)<\/tr>/g) || [];
+  for (let i = 1; i < rows.length; i++) {  // 跳过表头
+    const row = rows[i];
+    const tds = row.match(/<td[^>]*>([\s\S]+?)<\/td>/g) || [];
+    if (tds.length < 10) continue;
+
+    // 最后一列 = 税前分红率
+    const lastTd = tds[tds.length - 1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const m = lastTd.match(/(\d+\.?\d*)%/);
+    if (m) {
+      const val = parseFloat(m[1]);
+      if (val > 0 && val < 30) return val;  // 合理范围
+    }
+  }
+  return null;
+}
+
+// ── 东方财富财务数据（A股）───────────────────
+async function fetchEMFinance(code) {
+  setStatus(`获取财务数据（东方财富）...`);
+  const url = `https://datacenter.eastmoney.com/securities/api/data/get?type=RPT_F10_FINANCE_MAINFINADATA&sty=ALL&filter=(SECURITY_CODE%3D%22${code}%22)&p=1&ps=1&sr=-1&st=REPORT_DATE&source=HSF10&client=PC`;
+  const raw = await proxyFetch(url);
+  const data = parseProxyJson(raw);
+  const rows = data?.result?.data;
+  if (!rows || rows.length === 0) throw new Error('无财务数据');
+  const r = rows[0]; // 最新一期
+  return {
+    revenueGrowth:   r.TOTALOPERATEREVETZ,  // %
+    netProfitGrowth: r.PARENTNETPROFITTZ,   // %
+    roe:             r.ROEJQ,               // %
+    netMargin:       r.XSJLL,               // %
+    grossMargin:     r.XSMLL,              // %
+    debtRatio:       r.ZCFZL,              // %
+    roic:            r.ROIC,               // %
+    reportDate:      r.REPORT_DATE_NAME,   // '2024年报'
+    eps:             r.EPSJB,
+  };
+}
+
+// ── 技术指标计算 ─────────────────────────────
+function calcRSI(closes, period=14) {
+  if (closes.length < period+1) return null;
+  let g=0, l=0;
+  for (let i=1;i<=period;i++){const d=closes[i]-closes[i-1]; d>0?g+=d:l+=(-d);}
+  g/=period; l/=period;
+  for (let i=period+1;i<closes.length;i++){
+    const d=closes[i]-closes[i-1];
+    if(d>0){g=(g*(period-1)+d)/period;l=l*(period-1)/period;}
+    else{l=(l*(period-1)+(-d))/period;g=g*(period-1)/period;}
+  }
+  return l===0?100:100-100/(1+g/l);
+}
+function calcEMA(a, p) {
+  const k=2/(p+1); let e=a[0]; const r=[e];
+  for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);r.push(e);}
+  return r;
+}
+function calcMACD(c) {
+  const e12=calcEMA(c,12), e26=calcEMA(c,26);
+  const macd=e12.map((v,i)=>v-e26[i]);
+  const sig=calcEMA(macd,9);
+  return { macd, sig, hist: macd.map((v,i)=>v-sig[i]) };
+}
+function calcBB(c, p=20, m=2) {
+  if(c.length<p) return null;
+  const s=c.slice(-p), avg=s.reduce((a,b)=>a+b,0)/p;
+  const std=Math.sqrt(s.reduce((a,b)=>a+(b-avg)**2,0)/p);
+  return { upper:avg+m*std, mid:avg, lower:avg-m*std };
+}
+function calcATR(h,l,c,p=14) {
+  const trs=[];
+  for(let i=1;i<c.length;i++) trs.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));
+  if(trs.length<p) return null;
+  return trs.slice(-p).reduce((a,b)=>a+b,0)/p;
+}
+const sma = (a,p) => a.length<p?null:a.slice(-p).reduce((x,y)=>x+y,0)/p;
+
+// ── 综合分析 ─────────────────────────────────
+function analyzeAll(market, info, kline) {
+  const { closes, highs, lows, dates } = kline;
+  const n = closes.length;
+  const price = info.price ?? (n>0?closes[n-1]:null);
+
+  // 技术指标
+  const rsi    = closes.length>15 ? calcRSI(closes) : null;
+  const {macd, sig, hist} = calcMACD(closes);
+  const macdNow=macd[macd.length-1], sigNow=sig[sig.length-1];
+  const histNow=hist[hist.length-1], histPrev=hist[hist.length-2];
+  const macdBull = macdNow > sigNow;
+  const macdCross =
+    (macdNow>sigNow && macd[macd.length-2]<=sig[sig.length-2]) ? '金叉 🟢' :
+    (macdNow<sigNow && macd[macd.length-2]>=sig[sig.length-2]) ? '死叉 🔴' :
+    (macdBull ? '多头排列 🟢' : '空头排列 🔴');
+
+  const bb    = calcBB(closes);
+  const bbPct = bb && price ? (price-bb.lower)/(bb.upper-bb.lower) : null;
+
+  // 布林带位置描述（更精细）
+  let bbDesc = 'N/A';
+  let bbStatus = null; // true=中性/好, false=警惕
+  if (bb && price != null) {
+    const pct = bbPct;
+    if (pct <= 0) {
+      bbDesc = `下轨附近（0%）🟢 超卖区域`;
+      bbStatus = true;
+    } else if (pct <= 0.2) {
+      bbDesc = `接近下轨（${fmtP(pct)}）🟢`;
+      bbStatus = true;
+    } else if (pct <= 0.4) {
+      bbDesc = `下轨到中轨之间（${fmtP(pct)}）🟢`;
+      bbStatus = true;
+    } else if (pct <= 0.6) {
+      bbDesc = `中轨附近（${fmtP(pct)}）⬜ 中性`;
+      bbStatus = null;
+    } else if (pct <= 0.8) {
+      bbDesc = `上轨到中轨之间（${fmtP(pct)}）🟡`;
+      bbStatus = null;
+    } else if (pct < 1.0) {
+      bbDesc = `接近上轨（${fmtP(pct)}）🔴 注意回调`;
+      bbStatus = false;
+    } else {
+      bbDesc = `突破上轨（${fmtP(pct)}）🔴 超买，警惕`;
+      bbStatus = false;
+    }
+  }
+
+  const sma50  = sma(closes, 50);
+  const sma200 = sma(closes, 200);
+  const atr14  = calcATR(highs, lows, closes, 14);
+
+  // 动量（12-1月）
+  let momentum = null;
+  if (n >= 252) momentum = (closes[n-22]-closes[n-252])/closes[n-252];
+  else if (n >= 66) momentum = (closes[n-1]-closes[n-66])/closes[n-66];
+
+  // 52W（优先用腾讯财经的精确值）
+  const high52 = info.high52 ?? (n>0?Math.max(...closes.slice(-252).filter(Boolean)):null);
+  const low52  = info.low52  ?? (n>0?Math.min(...closes.slice(-252).filter(Boolean)):null);
+  const pctFromHigh = (price&&high52) ? (price-high52)/high52 : null;
+  const pctFromLow  = (price&&low52)  ? (price-low52)/low52   : null;
+
+  // 近期涨跌：从K线数据中精确计算
+  // K线按交易日排列，最后一条是最新价
+  // 近1月：约20个交易日前
+  // 近3月：约60个交易日前
+  let ret1m = null, ret3m = null;
+  if (n >= 2) {
+    const curPrice = closes[n-1];
+    // 找约1月前（20个交易日）
+    const idx1m = Math.max(0, n - 21); // n-1是今天，n-21是20个交易日前
+    const price1m = closes[idx1m];
+    if (price1m && price1m > 0) ret1m = (curPrice - price1m) / price1m;
+
+    // 找约3月前（60个交易日）
+    const idx3m = Math.max(0, n - 61);
+    const price3m = closes[idx3m];
+    if (price3m && price3m > 0) ret3m = (curPrice - price3m) / price3m;
+  }
+
+  // 基本面评分
+  let pos=0, total=0;
+  const sc = c => { total++; if(c===true) pos++; };
+
+  sc(!na(momentum) ? momentum>0 : null);
+  sc(!na(rsi) ? rsi>30&&rsi<70 : null);
+  sc(macdBull);
+  sc(!na(sma50)&&!na(price) ? price>sma50 : null);
+  sc(!na(sma200)&&!na(price) ? price>sma200 : null);
+  sc(!na(info.pe) ? info.pe<30 : null);
+  sc(!na(info.pb) ? info.pb<5 : null);
+  sc(!na(info.roe) ? info.roe>12 : null);
+  sc(!na(info.revenueGrowth) ? info.revenueGrowth>0 : null);
+  sc(!na(info.netMargin) ? info.netMargin>10 : null);
+
+  const verdict =
+    pos>=7 ? { l:'建议买入',   cls:'buy',  e:'🟢' } :
+    pos>=5 ? { l:'持有观望',   cls:'hold', e:'🟡' } :
+             { l:'建议回避',   cls:'sell', e:'🔴' };
+
+  const reason =
+    verdict.cls==='buy'  ? `基本面+技术面共振向上（${pos}/${total}项正面），风险收益比良好` :
+    verdict.cls==='hold' ? `信号混合（${pos}/${total}项正面），等待催化剂或技术确认` :
+                           `正面信号不足（${pos}/${total}项正面），等待更好的买入机会`;
+
+  return {
+    price, rsi, macdNow, sigNow, histNow, histPrev, macdCross, macdBull,
+    bb, bbPct, bbDesc, bbStatus, sma50, sma200, atr14, momentum,
+    high52, low52, pctFromHigh, pctFromLow, ret1m, ret3m,
+    pos, total, verdict, reason, info,
+  };
+}
+
+// ── 渲染报告 ─────────────────────────────────
+function mr(label, val, ok, extra='') {
+  const icon = ok===true?'✅':ok===false?'❌':'';
+  const cls  = ok===true?'g':ok===false?'r':'gr';
+  return `<div class="metric-row">
+    <div class="ml">${label}</div>
+    <div class="mv">${val}${extra}</div>
+    <div class="ms ${cls}">${icon}</div>
+  </div>`;
+}
+function ci(text, pass, isSell=false) {
+  let cls, mark, note='';
+  if (pass===null||pass===undefined) { cls='manual'; mark='⚠️'; note='<div class="cn">需人工确认</div>'; }
+  else if (isSell) { cls=pass?'fail':'pass'; mark=pass?'❌':'✅'; }
+  else             { cls=pass?'pass':'fail'; mark=pass?'✅':'❌'; }
+  return `<div class="ci ${cls}"><div class="cm">${mark}</div><div><div class="ct">${text}</div>${note}</div></div>`;
+}
+
+function renderReport(market, ticker, d, sources) {
+  const mn = { CN:'A股', HK:'港股', US:'美股' };
+  const cy = market==='CN'?'¥':market==='HK'?'HK$':'$';
+  const now = new Date().toLocaleString('zh-CN');
+  const info = d.info;
+  const stockName = info.name ? ` · ${info.name}` : '';
+
+  // 盈利阶段
+  let earnStage = null, earnStageText = '⚠️需人工确认';
+  if (!na(info.revenueGrowth) && !na(info.roe)) {
+    if (info.revenueGrowth > 5 && info.roe > 15)
+      { earnStage=true; earnStageText='<span class="g">第三阶段（盈利动量期）→ 可持有</span>'; }
+    else if (info.revenueGrowth > 0)
+      { earnStage=true; earnStageText='<span class="y">第二阶段（盈利修复期）→ 潜在机会</span>'; }
+    else
+      { earnStage=false; earnStageText='<span class="r">第一/四阶段（盈利压力）→ 谨慎</span>'; }
+  }
+
+  // ── 读取用户风控参数 ──────────────────────
+  const totalCapital    = parseFloat(document.getElementById('totalCapital').value)    || 1000000;
+  const maxLossPct      = parseFloat(document.getElementById('maxLossPct').value)      || 15;   // %
+  const targetReturnPct = parseFloat(document.getElementById('targetReturnPct').value) || 20;   // %
+  const stopMode        = document.getElementById('stopMode').value;
+  const stopStrategy    = document.getElementById('stopStrategy').value;
+
+  // ── 止损位计算 ─────────────────────────────
+  let stopPrice = null, stopDist = null, stopDistPct = null, stopLabel = '';
+  if (!na(d.price)) {
+    if (stopMode === 'atr2' && !na(d.atr14)) {
+      stopPrice = d.price - 2 * d.atr14;
+      stopLabel = '2倍ATR止损';
+    } else if (stopMode === 'atr3' && !na(d.atr14)) {
+      stopPrice = d.price - 3 * d.atr14;
+      stopLabel = '3倍ATR止损';
+    } else if (stopMode === 'sma200' && !na(d.sma200)) {
+      stopPrice = d.sma200 * 0.95;
+      stopLabel = '200日均线下方5%';
+    }
+    if (stopPrice != null && stopPrice > 0) {
+      stopDist    = d.price - stopPrice;           // 元
+      stopDistPct = stopDist / d.price;            // 小数
+    }
+  }
+
+  // ── 固定风险法仓位 ─────────────────────────
+  // 逻辑：单笔最大亏损金额 = 总资金 × maxLossPct%
+  //       建议仓位金额     = 最大亏损金额 / 止损距离%
+  //       建议仓位比例     = 建议仓位金额 / 总资金
+  let posHtml = 'N/A（需止损距离）';
+  let riskRewardHtml = '';
+  let suggestedAmount = null, suggestedPct = null;
+  const maxLossAmount = totalCapital * (maxLossPct / 100);  // 最大亏损金额
+
+  if (stopDistPct != null && stopDistPct > 0) {
+    suggestedAmount = Math.min(maxLossAmount / stopDistPct, totalCapital); // 上限为总资金
+    suggestedPct    = suggestedAmount / totalCapital * 100; // 建议仓位比例%
+
+    // 赔率 = 目标收益率 / 止损距离%
+    const rewardRatio = (targetReturnPct / 100) / stopDistPct;
+
+    const rawAmount = maxLossAmount / stopDistPct;
+    const isCapped  = rawAmount > totalCapital;
+    posHtml = `
+      <span style="font-size:15px;font-weight:700;color:#2b6cb0">
+        ¥${suggestedAmount>=10000?(suggestedAmount/10000).toFixed(1)+'万':Math.round(suggestedAmount).toLocaleString()}
+      </span>
+      <span style="color:#718096;font-size:12px;">
+        （占总资金 <strong>${suggestedPct.toFixed(1)}%</strong>）
+      </span>
+      ${isCapped ? `<span style="color:#c53030;font-size:11px;margin-left:6px;">
+        ⚠️ 理论值¥${(rawAmount/10000).toFixed(1)}万，已限制为全仓——止损距离（${fmtP(stopDistPct*100)}）远小于最大亏损比例（${maxLossPct}%），建议拉宽止损或降低单笔亏损上限
+      </span>` : ''}`;
+
+    riskRewardHtml = `
+      <span style="color:#${rewardRatio>=2?'276749':'c53030'};">
+        ${rewardRatio.toFixed(2)}:1
+      </span>
+      <span style="color:#718096;font-size:12px;">
+        （目标+${targetReturnPct}% ÷ 止损-${fmtP(stopDistPct*100)}）
+        ${rewardRatio>=3?' 🟢优秀':rewardRatio>=2?' 🟡可接受':' 🔴偏低，慎入'}
+      </span>`;
+  }
+
+  // ── 止损位展示字符串 ───────────────────────
+  const stopPriceStr  = stopPrice!=null  ? `${cy}${fmt(stopPrice)}` : 'N/A';
+  const stopDistPctStr = stopDistPct!=null ? fmtP(stopDistPct*100)   : 'N/A';
+  const atrStr = !na(d.atr14) ? fmtN(d.atr14) : 'N/A';
+
+  const srcTags = sources.map(s =>
+    `<span class="source-tag ${s.ok?'ok':'warn'}">${s.name} ${s.ok?'✓':'✗'}</span>`
+  ).join('');
+
+  let html = `
+  <div class="report-header">
+    <div class="ticker-line">
+      📊 ${ticker.toUpperCase()}
+      <span class="market-badge market-${market}">${mn[market]}</span>
+      <span style="font-size:15px;font-weight:400;color:#bee3f8">${stockName}</span>
+    </div>
+    <div class="meta">分析时间：${now} · 框架：《二级市场买卖点判断：顶级机构的系统性决策框架》</div>
+    <div class="source-tags">${srcTags}</div>
+  </div>
+
+  <div class="verdict-card ${d.verdict.cls==='buy'?'':d.verdict.cls}">
+    <div class="verdict-emoji">${d.verdict.e}</div>
+    <div class="verdict-text">
+      <h3>${d.verdict.l}</h3>
+      <p>${d.reason}</p>
+      <p style="color:#a0aec0;font-size:11px;margin-top:4px">仅供参考，不构成投资建议</p>
+    </div>
+    <div class="verdict-score">
+      <div class="num ${d.verdict.cls==='buy'?'g':d.verdict.cls==='hold'?'y':'r'}">${d.pos}</div>
+      <div class="label">/ ${d.total} 正面</div>
+    </div>
+  </div>
+
+  <!-- 一、基本面 -->
+  <div class="card">
+    <h3>🏛️ 一、基本面分析</h3>
+    <div class="section-title">估值指标（腾讯财经）</div>
+    ${mr('当前股价', !na(d.price)?cy+fmtN(d.price):'N/A', null)}
+    ${mr('PE（TTM）', !na(info.pe)?fmtN(info.pe,1):
+        'N/A', na(info.pe)?null:info.pe<30&&info.pe>0)}
+    ${mr('PB（市净率）', !na(info.pb)?fmtN(info.pb,2):
+        'N/A', na(info.pb)?null:info.pb<5&&info.pb>0)}
+    ${mr('总市值', !na(info.mktCap)?fmtN(info.mktCap,0)+'亿':'N/A', null)}
+    ${mr('52周高点', !na(d.high52)?cy+fmtN(d.high52)+
+        (!na(d.pctFromHigh)?'（距高点 '+fmtP(d.pctFromHigh)+'）':''):'N/A', null)}
+    ${mr('52周低点', !na(d.low52)?cy+fmtN(d.low52)+
+        (!na(d.pctFromLow)?'（已回升 '+fmtP(d.pctFromLow)+'）':''):'N/A', null)}
+    ${!na(info.dividendYield)?mr(
+        market==='CN'?'股息率（同花顺·税前分红率）':'股息率',
+        fmtP(info.dividendYield,2),
+        info.dividendYield>2):''}
+
+    <div class="section-title">财务质量（${market==='CN'?'东方财富':'腾讯财经'}）</div>
+    ${mr('ROE（净资产回报率）', !na(info.roe)?fmtP(info.roe)+(info.reportDate?' ['+info.reportDate+']':''):'N/A',
+        na(info.roe)?null:info.roe>15)}
+    ${mr('毛利率', !na(info.grossMargin)?fmtP(info.grossMargin):'N/A',
+        na(info.grossMargin)?null:info.grossMargin>30)}
+    ${mr('净利率', !na(info.netMargin)?fmtP(info.netMargin):'N/A',
+        na(info.netMargin)?null:info.netMargin>10)}
+    ${mr('资产负债率', !na(info.debtRatio)?fmtP(info.debtRatio):'N/A',
+        na(info.debtRatio)?null:info.debtRatio<60)}
+    ${!na(info.roic)?mr('ROIC', fmtP(info.roic),info.roic>9):''}
+
+    <div class="section-title">Bernstein 盈利修正周期</div>
+    ${mr('阶段判断', earnStageText, earnStage)}
+    ${mr('营收增速（同比）', !na(info.revenueGrowth)?fmtP(info.revenueGrowth):'N/A',
+        na(info.revenueGrowth)?null:info.revenueGrowth>5)}
+    ${mr('净利润增速（同比）', !na(info.netProfitGrowth)?fmtP(info.netProfitGrowth):'N/A',
+        na(info.netProfitGrowth)?null:info.netProfitGrowth>5)}
+    ${market==='CN'&&!na(info.turnoverRate)?mr('A股换手率（今日）',
+        fmtN(info.turnoverRate,2)+'%'+
+        (info.turnoverRate<1?' → 地量，可能底部信号':
+         info.turnoverRate>10?' → 主力大举介入 📈':
+         info.turnoverRate>45?' → 极端投机 🔴':''),
+        null):''}
+  </div>
+
+  <!-- 二、技术面 -->
+  <div class="card">
+    <h3>📈 二、量化/技术面信号</h3>
+    ${mr('12-1月动量因子', !na(d.momentum)?fmtP(d.momentum)+(d.momentum>0.2?' → 强势动量':d.momentum>0?' → 正动量':' → 负动量'):'数据不足（需252个交易日）',
+        na(d.momentum)?null:d.momentum>0)}
+    ${mr('RSI(14)', !na(d.rsi)?fmtN(d.rsi,1)+(d.rsi<30?' → 超卖 🟢':d.rsi>70?' → 超买 🔴':' → 中性'):'N/A',
+        na(d.rsi)?null:d.rsi>30&&d.rsi<70)}
+    ${mr('MACD(12/26/9)', d.macdCross+(d.histNow&&d.histPrev?'  柱状'+(d.histNow>d.histPrev?'扩大📈':'收缩📉'):''), d.macdBull)}
+    ${d.bb?mr('布林带(20/2σ)位置', d.bbDesc, d.bbStatus):''}
+    ${d.bb&&!na(d.bb.upper)&&!na(d.bb.mid)&&!na(d.bb.lower)?mr('布林带数值',
+        `上轨 ${fmtN(d.bb.upper)} · 中轨 ${fmtN(d.bb.mid)} · 下轨 ${fmtN(d.bb.lower)}`, null):''}
+    ${mr('50日均线', !na(d.sma50)&&!na(d.price)?
+        fmtN(d.sma50)+'，价格'+(d.price>d.sma50?'上方 🟢':'下方 🔴'):'N/A',
+        na(d.sma50)||na(d.price)?null:d.price>d.sma50)}
+    ${mr('200日均线', !na(d.sma200)&&!na(d.price)?
+        fmtN(d.sma200)+'，价格'+(d.price>d.sma200?'上方 🟢（长期多头）':'下方 🔴（长期空头）'):'N/A',
+        na(d.sma200)||na(d.price)?null:d.price>d.sma200)}
+    ${!na(d.sma50)&&!na(d.sma200)?mr('均线状态',
+        d.sma50>d.sma200?'金叉（50>200）🟢':'死叉（50<200）🔴', d.sma50>d.sma200):''}
+    ${mr('近1月涨跌（约20交易日）', !na(d.ret1m)?fmtP(d.ret1m*100)+(d.ret1m>0.15?' ⚠️警惕处置效应':d.ret1m<-0.15?' ⚠️警惕损失厌恶':''):'N/A', null)}
+    ${mr('近3月涨跌（约60交易日）', !na(d.ret3m)?fmtP(d.ret3m*100):'N/A', null)}
+  </div>
+
+  <!-- 三、市场结构 -->
+  <div class="card">
+    <h3>🌍 三、市场结构适配（${mn[market]}）</h3>
+    ${marketCard(market, d)}
+  </div>
+
+  <!-- 四、仓位风控 -->
+  <div class="card">
+    <h3>🛡️ 四、仓位管理与风控</h3>
+
+    <div class="section-title">参数确认</div>
+    ${mr('总资金', `¥${totalCapital>=10000?(totalCapital/10000).toFixed(0)+'万':totalCapital.toLocaleString()}`, null)}
+    ${mr('单笔最大亏损', `¥${maxLossAmount>=10000?(maxLossAmount/10000).toFixed(1)+'万':Math.round(maxLossAmount).toLocaleString()}（${maxLossPct}% 总资金）`, null)}
+    ${mr('目标收益率', `+${targetReturnPct}%`, null)}
+    ${mr('止损方式', stopLabel || stopMode, null)}
+
+    <div class="section-title">止损位</div>
+    ${mr('ATR(14)', atrStr, null)}
+    ${mr(stopLabel || '止损价', stopPrice!=null?`${stopPriceStr}（距现价 -${stopDistPctStr}）`:'N/A（止损方式无法计算，检查K线数据）', stopPrice!=null)}
+
+    <div class="section-title">固定风险法仓位建议</div>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:10px;font-size:12.5px;color:#1e40af;line-height:1.8;">
+      <strong>计算逻辑：</strong>单笔最大亏损（¥${maxLossAmount>=10000?(maxLossAmount/10000).toFixed(1)+'万':Math.round(maxLossAmount)}）÷ 止损距离（${stopDistPctStr}）= 建议仓位
+      <br><span style="color:#6b7280;font-size:11px;">跌到止损位时，损失不超过总资金的 ${maxLossPct}%</span>
+    </div>
+    ${mr('建议仓位', posHtml || 'N/A', null)}
+    ${riskRewardHtml ? mr('风险收益比', riskRewardHtml, null) : ''}
+    ${suggestedAmount!=null&&!na(d.price)?mr('对应股数（参考）',
+      `约 ${Math.floor(suggestedAmount/d.price/100)*100} 股（${Math.floor(suggestedAmount/d.price/100)} 手）`,null):''}
+
+    <div class="section-title">止损执行策略</div>
+    ${(()=>{
+      const strat = document.getElementById('stopStrategy').value;
+      const sp = stopPrice!=null ? stopPriceStr : '止损位';
+      const strategies = {
+        hard: {
+          title: '硬止损（立刻全部了结）',
+          desc: `价格跌破 ${sp} 时，<strong>立即市价卖出全部持仓</strong>，不等反弹、不分批。`,
+          pros: '执行确定，最大程度保护本金',
+          cons: '可能被短期假跌破洗出，踏空后续反弹',
+          rule: `盘中触及 ${sp} → 不等收盘，直接挂单卖出`,
+          color: '#dc2626',
+        },
+        half: {
+          title: '半仓减持（减50%观察3日）',
+          desc: `价格跌破 ${sp} 时，<strong>先卖出一半</strong>；观察1~3个交易日——若收盘仍在止损线下则卖出剩余，若反弹回止损线上方则持观望态度。`,
+          pros: '避免被单日假突破清仓，保留部分反弹收益',
+          cons: '若继续下跌，第2次卖出的价格更低，实际亏损超过预算',
+          rule: `跌破 ${sp} → 卖50%；收盘价仍低于止损线 → 卖剩余50%`,
+          color: '#d97706',
+        },
+        close: {
+          title: '收盘确认（收盘价破线才执行）',
+          desc: `盘中跌破 ${sp} <strong>不行动</strong>，等当日<strong>收盘价确认</strong>跌破后次日开盘卖出。仅当日收盘价低于止损线才触发。`,
+          pros: '过滤90%的盘中假突破（A股尤其常见）',
+          cons: '若次日跳空低开，实际卖出价低于止损价，亏损超预算',
+          rule: `盘中触线 → 观察；收盘价 < ${sp} → 次日开盘卖出`,
+          color: '#2563eb',
+        },
+        trailing: {
+          title: '追踪止损（随价格上涨上移止损线）',
+          desc: `初始止损设在 ${sp}。每当持仓<strong>盈利超过1倍ATR</strong>时，将止损线向上移动1倍ATR，锁定部分利润，上行空间不受限制。`,
+          pros: '彻底解决"止损后反弹踏空"问题；盈利越多保护越强',
+          cons: '初始进场仍有亏损风险；需要每日更新止损线',
+          rule: stopPrice!=null&&!na(d.atr14)&&!na(d.price) ? (() => {
+            const atr = d.atr14;
+            const steps = [0,1,2,3].map(i => ({
+              gain: i,
+              newStop: fmt(stopPrice + i * atr),
+              trigger: fmt(d.price + i * atr),
+            }));
+            return `<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:4px;">
+              <tr style="background:#f1f5f9;"><th style="padding:4px 8px;text-align:left;">当前浮盈</th><th style="padding:4px 8px;text-align:left;">止损线上移至</th></tr>
+              ${steps.map(s=>`<tr style="border-top:1px solid #e2e8f0;">
+                <td style="padding:4px 8px;color:#374151;">价格到达 ${cy}${s.trigger}（+${s.gain}×ATR）</td>
+                <td style="padding:4px 8px;color:#2b6cb0;font-weight:600;">${cy}${s.newStop}</td>
+              </tr>`).join('')}
+            </table>`;
+          })() : `每上涨1倍ATR（${!na(d.atr14)?fmtN(d.atr14):'-'}元），止损线上移1倍ATR`,
+          color: '#059669',
+        },
+      };
+      const s = strategies[strat] || strategies.hard;
+      return `
+      <div style="border-left:3px solid ${s.color};padding:10px 14px;background:#f9fafb;border-radius:0 8px 8px 0;margin-bottom:8px;">
+        <div style="font-weight:600;font-size:13px;color:${s.color};margin-bottom:6px;">${s.title}</div>
+        <div style="font-size:12.5px;color:#374151;line-height:1.7;margin-bottom:8px;">${s.desc}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11.5px;margin-bottom:8px;">
+          <div style="background:#f0fdf4;border-radius:6px;padding:7px 10px;">
+            <span style="color:#166534;font-weight:600;">✅ 优点</span><br>
+            <span style="color:#374151;">${s.pros}</span>
+          </div>
+          <div style="background:#fff7ed;border-radius:6px;padding:7px 10px;">
+            <span style="color:#9a3412;font-weight:600;">⚠️ 风险</span><br>
+            <span style="color:#374151;">${s.cons}</span>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;font-size:12px;color:#374151;">
+          <span style="font-weight:600;color:#6b7280;">执行规则：</span>${typeof s.rule === 'string' ? s.rule : s.rule}
+        </div>
+      </div>`;
+    })()}
+
+    <div class="section-title">金字塔建仓时机（结合本股当前数据）</div>
+    ${(()=>{
+      // 根据当前技术指标判断当前处于金字塔哪个阶段
+      const price   = d.price;
+      const sma50   = d.sma50;
+      const sma200  = d.sma200;
+      const rsi     = d.rsi;
+      const bbPct   = d.bbPct;
+      const macdBull = d.macdBull;
+      const atr     = d.atr14;
+
+      // 首批触发条件：3/4满足即可
+      const t1 = [
+        !na(rsi)   && rsi > 30 && rsi < 60,           // RSI中低区间，未超买
+        !na(bbPct) && bbPct < 0.5,                     // 布林带下半区
+        !na(sma200)&& !na(price) && price > sma200,    // 在200日均线上方（大方向对）
+        macdBull === false,                             // MACD还未多头（等待入场机会）
+      ];
+      const t1count = t1.filter(Boolean).length;
+
+      // 第二批：突破确认，3/4满足
+      const t2 = [
+        !na(sma50) && !na(price) && price > sma50,     // 站上50日均线
+        macdBull,                                       // MACD金叉/多头
+        !na(rsi)   && rsi > 50 && rsi < 70,            // RSI站上50，动能转正
+        !na(bbPct) && bbPct > 0.5 && bbPct < 0.8,     // 布林带上半区但未贴上轨
+      ];
+      const t2count = t2.filter(Boolean).length;
+
+      // 第三批：趋势确认，3/4满足
+      const t3 = [
+        !na(sma50) && !na(sma200) && sma50 > sma200,   // 均线金叉（50>200）
+        !na(rsi)   && rsi > 55 && rsi < 70,             // RSI强势区间
+        macdBull,                                        // MACD持续多头
+        !na(bbPct) && bbPct > 0.6 && bbPct < 0.85,    // 价格在中轨到上轨间
+      ];
+      const t3count = t3.filter(Boolean).length;
+
+      const pct1 = 0.5, pct2 = 0.3, pct3 = 0.2;
+      const amt   = suggestedAmount || 0;
+      const mkAmt = p => amt>0 ? `¥${((amt*p)>=10000?((amt*p)/10000).toFixed(1)+'万':Math.round(amt*p).toLocaleString())}` : '';
+      const addPrice2 = (!na(atr)&&!na(price)) ? fmt(price + 1.5*atr) : null;
+      const addPrice3 = (!na(atr)&&!na(price)) ? fmt(price + 3*atr)   : null;
+
+      const stageBadge = (n, total, label) => {
+        const pct = total>0 ? n/total : 0;
+        const col = pct>=0.75?'#059669':pct>=0.5?'#d97706':'#9ca3af';
+        const bg  = pct>=0.75?'#f0fdf4':pct>=0.5?'#fffbeb':'#f3f4f6';
+        return `<span style="background:${bg};color:${col};border:1px solid ${col};border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600;">${label}：${n}/${total} 条件满足</span>`;
+      };
+
+      return `
+      <div style="display:flex;flex-direction:column;gap:10px;">
+
+        <!-- 第一批 -->
+        <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+          <div style="background:#f8fafc;padding:10px 14px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <span style="font-weight:700;color:#1a202c;font-size:13px;">🟦 第一批（50% 仓位）${mkAmt(pct1)?'— '+mkAmt(pct1):''}</span>
+              <div style="font-size:11px;color:#718096;margin-top:2px;">观望期结束，出现初步低位信号时买入</div>
+            </div>
+            ${stageBadge(t1count, t1.length, '当前')}
+          </div>
+          <div style="padding:10px 14px;font-size:12px;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              ${[
+                [t1[0], `RSI(14) 在 30~60 之间（当前 ${!na(rsi)?fmtN(rsi,1):'N/A'}）— 未超买，有上行空间`],
+                [t1[1], `布林带位置在下半区（当前 ${!na(bbPct)?fmtP(bbPct*100):'N/A'}）— 价格处于相对低位`],
+                [t1[2], `股价在 200 日均线上方（${!na(sma200)&&!na(price)?`均线 ${fmtN(sma200)}`:'数据不足'}）— 大趋势向上`],
+                [t1[3], `MACD 尚未多头排列 — 动能未过热，仍有入场窗口`],
+              ].map(([ok, txt])=>`<div style="display:flex;gap:8px;align-items:flex-start;">
+                <span style="flex-shrink:0;margin-top:1px;">${ok?'✅':'⬜'}</span>
+                <span style="color:${ok?'#1a202c':'#9ca3af'};">${txt}</span>
+              </div>`).join('')}
+            </div>
+            <div style="margin-top:8px;padding:6px 10px;background:#eff6ff;border-radius:6px;font-size:11.5px;color:#1e40af;">
+              💡 满足 3/4 条件即可建立首批仓位，不要等到完美信号
+            </div>
+          </div>
+        </div>
+
+        <!-- 第二批 -->
+        <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+          <div style="background:#f8fafc;padding:10px 14px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <span style="font-weight:700;color:#1a202c;font-size:13px;">🟩 第二批（30% 仓位）${mkAmt(pct2)?'— '+mkAmt(pct2):''}</span>
+              <div style="font-size:11px;color:#718096;margin-top:2px;">
+                趋势突破确认${addPrice2?` — 参考价格站稳 ${cy}${addPrice2}（+1.5×ATR）以上`:''}
+              </div>
+            </div>
+            ${stageBadge(t2count, t2.length, '当前')}
+          </div>
+          <div style="padding:10px 14px;font-size:12px;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              ${[
+                [t2[0], `股价站上 50 日均线（${!na(sma50)?`均线 ${fmtN(sma50)}`:'数据不足'}）— 中期趋势转多`],
+                [t2[1], `MACD 金叉或多头排列 — 动能确认向上`],
+                [t2[2], `RSI 在 50~70 之间（当前 ${!na(rsi)?fmtN(rsi,1):'N/A'}）— 动能站上中线`],
+                [t2[3], `布林带在上半区且未贴近上轨（当前 ${!na(bbPct)?fmtP(bbPct*100):'N/A'}）— 有上行空间`],
+              ].map(([ok, txt])=>`<div style="display:flex;gap:8px;align-items:flex-start;">
+                <span style="flex-shrink:0;margin-top:1px;">${ok?'✅':'⬜'}</span>
+                <span style="color:${ok?'#1a202c':'#9ca3af'};">${txt}</span>
+              </div>`).join('')}
+            </div>
+            <div style="margin-top:8px;padding:6px 10px;background:#f0fdf4;border-radius:6px;font-size:11.5px;color:#166534;">
+              💡 满足 3/4 条件，且首批已浮盈才加仓 — 严禁在亏损时加仓摊低成本
+            </div>
+          </div>
+        </div>
+
+        <!-- 第三批 -->
+        <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+          <div style="background:#f8fafc;padding:10px 14px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <span style="font-weight:700;color:#1a202c;font-size:13px;">🟨 第三批（20% 仓位）${mkAmt(pct3)?'— '+mkAmt(pct3):''}</span>
+              <div style="font-size:11px;color:#718096;margin-top:2px;">
+                趋势强势确认${addPrice3?` — 参考价格站稳 ${cy}${addPrice3}（+3×ATR）以上`:''}
+              </div>
+            </div>
+            ${stageBadge(t3count, t3.length, '当前')}
+          </div>
+          <div style="padding:10px 14px;font-size:12px;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              ${[
+                [t3[0], `50日均线在200日均线上方（${!na(sma50)&&!na(sma200)?`${fmtN(sma50)} vs ${fmtN(sma200)}`:'数据不足'}）— 均线金叉，长期趋势确认`],
+                [t3[1], `RSI 在 55~70 之间（当前 ${!na(rsi)?fmtN(rsi,1):'N/A'}）— 强势动能但未超买`],
+                [t3[2], `MACD 持续多头排列 — 趋势未衰减`],
+                [t3[3], `布林带在 60%~85% 区间（当前 ${!na(bbPct)?fmtP(bbPct*100):'N/A'}）— 上行但未过热`],
+              ].map(([ok, txt])=>`<div style="display:flex;gap:8px;align-items:flex-start;">
+                <span style="flex-shrink:0;margin-top:1px;">${ok?'✅':'⬜'}</span>
+                <span style="color:${ok?'#1a202c':'#9ca3af'};">${txt}</span>
+              </div>`).join('')}
+            </div>
+            <div style="margin-top:8px;padding:6px 10px;background:#fffbeb;border-radius:6px;font-size:11.5px;color:#92400e;">
+              💡 最后一批最保守 — 若前两批已获利丰厚且趋势极强才加；切记总仓位不超过建议上限
+            </div>
+          </div>
+        </div>
+
+      </div>`;
+    })()}
+
+    <div class="metric-row" style="flex-direction:column;align-items:flex-start;gap:6px;margin-top:12px;">
+      <div class="ml" style="color:#b7791f;font-weight:600">🎯 Druckenmiller 自检问题</div>
+      <div style="font-size:12.5px;color:#4a5568;line-height:1.7;background:#fffbeb;border-radius:6px;padding:10px 14px;width:100%;border:1px solid #f6e05e">
+        「假如我今天不持有这只股票，以当前价格会买入吗？」<br>
+        「我不关心买入成本——它与未来的投资决策完全无关。」
+      </div>
+    </div>
+  </div>
+
+  <!-- 五、综合决策矩阵 -->
+  <div class="card">
+    <h3>✅ 五、综合决策矩阵</h3>
+    <div class="two-col">
+      <div>
+        <div class="section-title">买入前 10 条 Checklist</div>
+        <div class="checklist">
+          ${ci('PE/PB估值处于合理区间', (!na(info.pe)&&!na(info.pb)) ? info.pe<30&&info.pb<5 : null)}
+          ${ci('盈利修正：营收/净利仍在增长', (!na(info.revenueGrowth)&&!na(info.netProfitGrowth)) ? info.revenueGrowth>0&&info.netProfitGrowth>0 : null)}
+          ${ci('质量过滤：ROE>15%（ROIC>资本成本）', !na(info.roe)?info.roe>15:null)}
+          ${ci('毛利率稳健（>30%）', !na(info.grossMargin)?info.grossMargin>30:null)}
+          ${ci('存在可识别催化剂（管理层/产品/政策）', null)}
+          ${ci('止损位已设定（ATR法）', !na(d.atr14))}
+          ${ci('技术面：价格在50SMA以上', !na(d.sma50)&&!na(d.price)?d.price>d.sma50:null)}
+          ${ci('技术面：MACD多头排列', d.macdBull)}
+          ${ci('聪明钱信号（内部人买入/机构累积）', null)}
+          ${ci('行为偏差检查（非FOMO，排除锚定）', null)}
+        </div>
+      </div>
+      <div>
+        <div class="section-title">卖出前 10 条 Checklist</div>
+        <div class="checklist">
+          ${ci('投资逻辑已改变（基本面被否定）', null, true)}
+          ${ci('PE/PB估值已过热（PE>50或PB>10）', (!na(info.pe)&&!na(info.pb)) ? info.pe>50||info.pb>10 : null, true)}
+          ${ci('营收/净利增速转负（盈利第四阶段）', (!na(info.revenueGrowth)&&!na(info.netProfitGrowth)) ? info.revenueGrowth<0||info.netProfitGrowth<0 : null, true)}
+          ${ci('毛利率/净利率持续压缩', (!na(info.grossMargin)&&!na(info.netMargin)) ? info.grossMargin<20||info.netMargin<5 : null, true)}
+          ${ci('止损位被击穿（200SMA下方5%）', !na(d.sma200)&&!na(d.price)?d.price<d.sma200*0.95:null, true)}
+          ${ci('MACD死叉且价格跌破50SMA', (!na(d.sma50)&&!na(d.price)) ? (!d.macdBull&&d.price<d.sma50) : null, true)}
+          ${ci('内部人大规模减持', null, true)}
+          ${ci('是否因损失厌恶"等回本"', null, true)}
+          ${ci('存在更好的资本配置机会', null, true)}
+          ${ci('熊市中公允价值是天花板（冯柳原则）', null, true)}
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+
+  document.getElementById('reportSection').innerHTML = html;
+  document.getElementById('reportSection').classList.add('show');
+}
+
+function marketCard(market, d) {
+  const info = d.info;
+  if (market === 'CN') {
+    return `
+    ${mr('核心定价逻辑', '政策驱动 + 情绪极端（招商证券三阶段框架）', null)}
+    ${!na(info.turnoverRate)?mr('换手率信号',
+        fmtN(info.turnoverRate,2)+'%'+
+        (info.turnoverRate<1?' → 地量，下降趋势中可能为底部':
+         info.turnoverRate>10?' → 主力大举介入':
+         info.turnoverRate>45?' → 极端投机，警惕':' → 正常区间'), null):''}
+    <div class="mhint">
+      <h4>需人工确认的A股特有信号</h4>
+      <ul>
+        <li>北向资金（2024年起不再实时披露，查季度汇总）</li>
+        <li>社融/M1：见底回升 → 政策底信号（政策底→盈利加速→过热三阶段）</li>
+        <li>A股T+1、±10%涨跌停，与美股逻辑截然不同</li>
+      </ul>
+    </div>`;
+  } else if (market === 'HK') {
+    return `
+    ${mr('核心定价逻辑', '流动性折价 + 南向资金重定价（2025年南向占比35-40%）', null)}
+    ${mr('AH溢价参考', '>140-150%时H股倾向跑赢；<125%时A股可能追赶', null)}
+    <div class="mhint">
+      <h4>需人工确认的港股特有信号</h4>
+      <ul>
+        <li>AH溢价指数（可在Wind/Bloomberg查询）</li>
+        <li>南向资金净流入情况（港交所每日披露）</li>
+        <li>注意：港股通持有港股分红需扣20%股息税（净收益率约打八折）</li>
+      </ul>
+    </div>`;
+  } else {
+    return `
+    ${mr('核心定价逻辑', '盈利驱动（PEAD效应：盈利超预期>10%，72%概率维持高价）', null)}
+    ${!na(d.atr14)&&!na(d.price)?mr('波动率（ATR）', fmtN(d.atr14)+'（当日波动'+(d.atr14/d.price*100).toFixed(1)+'%）', null):''}
+    <div class="mhint">
+      <h4>需人工确认的美股特有信号</h4>
+      <ul>
+        <li>期权隐含波动率偏斜（看跌偏斜加剧→恐惧上升）</li>
+        <li>VIX：>30警戒；>40极端恐慌（通常接近底部）</li>
+        <li>ETF资金流向（查 ETF.com 或 Bloomberg）</li>
+        <li>内部人买卖（查 SEC Form 4，簇群买入>3人是最强信号）</li>
+      </ul>
+    </div>`;
+  }
+}
+
+// ── 主流程 ────────────────────────────────────
+async function startAnalysis() {
+  const market = document.getElementById('market').value;
+  let rawTicker = document.getElementById('ticker').value.trim().toUpperCase();
+  if (!rawTicker) { alert('请输入股票代码'); return; }
+
+  document.getElementById('btnAnalyze').disabled = true;
+  document.getElementById('reportSection').classList.remove('show');
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('statusBar').classList.add('show');
+
+  const sources = [];
+
+  try {
+    // 构造各接口所需的代码格式
+    let tqCode, emCode, klineParam, isAStock=false;
+
+    if (market === 'CN') {
+      isAStock = true;
+      const code = rawTicker.split('.')[0];
+      const isSH = code.startsWith('6') || code.startsWith('5') || code.startsWith('11');
+      tqCode = (isSH?'sh':'sz') + code;
+      emCode = code;
+      klineParam = tqCode; // sh600519
+    } else if (market === 'HK') {
+      const code = rawTicker.split('.')[0].padStart(5,'0');
+      tqCode = 'hk' + code;
+      klineParam = tqCode;
+    } else { // US
+      const code = rawTicker.split('.')[0];
+      tqCode = 'us' + code;
+      klineParam = tqCode;
+    }
+
+    // 1. 腾讯财经实时报价
+    let qt = null;
+    try {
+      qt = await fetchTencentQuote(tqCode, isAStock);
+      sources.push({ name:'腾讯财经·实时报价', ok: true });
+    } catch(e) {
+      sources.push({ name:'腾讯财经·实时报价', ok: false });
+      console.warn('腾讯报价失败:', e.message);
+    }
+
+    // 2. 历史K线
+    let kline = { closes:[], highs:[], lows:[], opens:[], volumes:[], dates:[] };
+    try {
+      kline = await fetchTencentKline(klineParam, 500);
+      sources.push({ name:`腾讯财经·K线(${kline.closes.length}条)`, ok: true });
+    } catch(e) {
+      sources.push({ name:'腾讯财经·K线', ok: false });
+      console.warn('K线失败:', e.message);
+    }
+
+    // 3. 东方财富财务数据（A股）
+    let finance = {};
+    if (market === 'CN') {
+      try {
+        finance = await fetchEMFinance(emCode);
+        sources.push({ name:'东方财富·财务数据', ok: true });
+      } catch(e) {
+        sources.push({ name:'东方财富·财务数据', ok: false });
+        console.warn('东方财富财务失败:', e.message);
+      }
+    }
+
+    // 4. 同花顺股息率（A股专用，税前分红率）
+    let thsiDividendYield = null;
+    if (market === 'CN') {
+      try {
+        thsiDividendYield = await fetchThsiDividendYield(emCode);
+        if (thsiDividendYield != null) {
+          sources.push({ name:'同花顺·股息率', ok: true });
+        }
+      } catch(e) {
+        console.warn('同花顺股息率失败:', e.message);
+      }
+    }
+
+    // 合并数据
+    const info = {
+      name:           qt?.name ?? null,
+      price:          qt?.price ?? (kline.closes.length>0 ? kline.closes[kline.closes.length-1] : null),
+      pe:             qt?.pe ?? null,
+      pb:             qt?.pb ?? null,
+      high52:         qt?.high52 ?? null,
+      low52:          qt?.low52 ?? null,
+      mktCap:         qt?.mktCap ?? null,
+      turnoverRate:   qt?.turnoverRate ?? null,
+      // A股：同花顺税前分红率；美股/港股：腾讯财经
+      dividendYield:  thsiDividendYield ?? qt?.dividendYield ?? null,
+      // 财务数据（A股来自东方财富，其他市场暂无）
+      roe:            finance.roe ?? null,
+      roic:           finance.roic ?? null,
+      grossMargin:    finance.grossMargin ?? null,
+      netMargin:      finance.netMargin ?? null,
+      debtRatio:      finance.debtRatio ?? null,
+      revenueGrowth:  finance.revenueGrowth ?? null,
+      netProfitGrowth: finance.netProfitGrowth ?? null,
+      reportDate:     finance.reportDate ?? null,
+    };
+
+    if (na(info.price) && kline.closes.length === 0) {
+      throw new Error(`未能获取到 ${rawTicker} 的数据，请检查代码是否正确（A股无需加.SS/.SZ后缀）`);
+    }
+
+    setStatus('正在计算技术指标...');
+    const analysisData = analyzeAll(market, info, kline);
+
+    setStatus('正在生成报告...');
+    renderReport(market, rawTicker, analysisData, sources);
+
+  } catch(e) {
+    showErr(e.message);
+    console.error(e);
+  }
+
+  document.getElementById('statusBar').classList.remove('show');
+  document.getElementById('btnAnalyze').disabled = false;
+}
+
+// Enter 键触发
+document.getElementById('ticker').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startAnalysis();
+});
+</script>
+</body>
+</html>
